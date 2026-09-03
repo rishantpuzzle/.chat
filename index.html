@@ -32,12 +32,13 @@
     .divider { margin: 15px 0; color: #8696a0; font-size: 13px; }
     .toggle-link { color: #00a884; cursor: pointer; margin-top: 12px; font-size: 14px; text-decoration: underline; }
 
-    /* Search & Users */
-    .search-box { padding: 10px; background: #111b21; }
-    .user-card { background: #202c33; padding: 12px; margin: 5px 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+    /* User List Section */
+    .section-title { padding: 10px 15px 5px 15px; color: #00a884; font-size: 14px; font-weight: bold; }
+    .users-list-container { flex: 1; overflow-y: auto; padding-bottom: 10px; }
+    .user-card { background: #202c33; padding: 12px; margin: 6px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
 
     /* Chat Area */
-    .chat-area { flex: 1; display: flex; flex-direction: column; background: #0b141a; }
+    .chat-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; flex-direction: column; background: #0b141a; }
     .messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
     .msg { max-width: 75%; padding: 8px 12px; border-radius: 8px; font-size: 14px; word-break: break-word; }
     .msg.sent { background: #005c4b; align-self: flex-end; color: #e9edef; }
@@ -105,17 +106,21 @@
         </div>
       </div>
 
-      <div class="search-box">
-        <input type="text" id="search-input" placeholder="Search user by username..." />
+      <!-- Quick Filter Bar -->
+      <div style="padding: 10px 12px 5px 12px;">
+        <input type="text" id="search-input" placeholder="Filter users..." style="margin:0;" />
       </div>
 
-      <div id="search-results"></div>
+      <div class="section-title">All Users</div>
+
+      <!-- Auto-Loaded All Users List -->
+      <div id="users-list" class="users-list-container"></div>
 
       <!-- Active Chat Window -->
       <div id="chat-window" class="chat-area hidden">
-        <div class="header" style="background:#111b21;">
+        <div class="header">
           <span id="chat-with-user" style="font-weight:bold;"></span>
-          <button style="background:none; border:none; color:#8696a0; cursor:pointer;" id="btn-close-chat">✖</button>
+          <button style="background:none; border:none; color:#8696a0; cursor:pointer; font-size:18px;" id="btn-close-chat">✖</button>
         </div>
         
         <div class="messages" id="messages-container"></div>
@@ -146,7 +151,6 @@
       doc, 
       getDoc, 
       setDoc, 
-      updateDoc,
       collection, 
       query, 
       where, 
@@ -175,6 +179,7 @@
     let currentUserData = null;
     let activeChatUser = null;
     let unsubscribeMessages = null;
+    let unsubscribeUsers = null;
     let isSignUpMode = false;
 
     // Toggle Sign In / Sign Up Mode
@@ -207,7 +212,7 @@
           }
         } catch (err) {
           console.error("Firestore Error:", err);
-          alert("Database Error: " + err.message + "\nPlease make sure Firestore rules allow read/write!");
+          alert("Database Error: " + err.message);
           showUsernameScreen();
         }
       } else {
@@ -244,7 +249,11 @@
     });
 
     // Logout
-    document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      if (unsubscribeUsers) unsubscribeUsers();
+      if (unsubscribeMessages) unsubscribeMessages();
+      signOut(auth);
+    });
 
     // Save Initial Username
     document.getElementById('btn-save-username').addEventListener('click', async () => {
@@ -273,7 +282,7 @@
       }
     });
 
-    // Open & Cancel Edit Profile
+    // Edit Profile Navigation
     document.getElementById('btn-open-edit-profile').addEventListener('click', () => showEditProfileScreen());
     document.getElementById('btn-cancel-edit-profile').addEventListener('click', () => showMainScreen());
 
@@ -289,7 +298,7 @@
           const q = query(collection(db, 'users'), where('username', '==', newUsername));
           const snapshot = await getDocs(q);
           if (!snapshot.empty) {
-            return alert('Username is already taken! Please select a different one.');
+            return alert('Username is already taken!');
           }
         }
 
@@ -308,42 +317,54 @@
       }
     });
 
-    // Search Users
-    document.getElementById('search-input').addEventListener('input', async (e) => {
-      const queryText = e.target.value.trim().toLowerCase();
-      const resultsContainer = document.getElementById('search-results');
-      resultsContainer.innerHTML = '';
+    // AUTO-LOAD ALL REGISTERED USERS (Realtime Listener)
+    function loadAllUsers() {
+      const usersListContainer = document.getElementById('users-list');
+      const filterInput = document.getElementById('search-input');
 
-      if (!queryText) return;
+      if (unsubscribeUsers) unsubscribeUsers();
 
-      try {
-        const q = query(
-          collection(db, 'users'), 
-          where('username', '>=', queryText),
-          where('username', '<=', queryText + '\uf8ff')
-        );
+      // Listen to all users in real-time
+      unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+        renderUsersList(snapshot);
+      });
 
-        const snapshot = await getDocs(q);
+      filterInput.addEventListener('input', () => {
+        getDocs(collection(db, 'users')).then(snapshot => renderUsersList(snapshot));
+      });
+
+      function renderUsersList(snapshot) {
+        usersListContainer.innerHTML = '';
+        const filterText = filterInput.value.trim().toLowerCase();
+        let count = 0;
+
         snapshot.forEach((docSnap) => {
           const user = docSnap.data();
-          if (user.uid !== currentUser.uid) {
-            const card = document.createElement('div');
-            card.className = 'user-card';
-            card.innerHTML = `
-              <div>
-                <strong>@${user.username}</strong>
-                <div style="font-size:12px; color:#8696a0;">${user.displayName}</div>
-              </div>
-              <button class="btn-send" style="padding:6px 12px;">Chat</button>
-            `;
-            card.querySelector('button').addEventListener('click', () => openChat(user.uid, user.username));
-            resultsContainer.appendChild(card);
+
+          // Don't show self and must have a valid username
+          if (user.uid !== currentUser.uid && user.username) {
+            if (!filterText || user.username.toLowerCase().includes(filterText) || (user.displayName && user.displayName.toLowerCase().includes(filterText))) {
+              count++;
+              const card = document.createElement('div');
+              card.className = 'user-card';
+              card.innerHTML = `
+                <div>
+                  <strong>@${user.username}</strong>
+                  <div style="font-size:12px; color:#8696a0;">${user.displayName || user.username}</div>
+                </div>
+                <button class="btn-send" style="padding:6px 14px;">Chat</button>
+              `;
+              card.querySelector('button').addEventListener('click', () => openChat(user.uid, user.username));
+              usersListContainer.appendChild(card);
+            }
           }
         });
-      } catch (err) {
-        console.error("Search Error:", err);
+
+        if (count === 0) {
+          usersListContainer.innerHTML = '<div style="color:#8696a0; text-align:center; padding:20px; font-size:13px;">No other users found.</div>';
+        }
       }
-    });
+    }
 
     // Chat Window Helpers
     function getChatId(uid1, uid2) {
@@ -437,6 +458,7 @@
       hideAllScreens();
       document.getElementById('main-screen').classList.remove('hidden');
       document.getElementById('my-username-display').innerText = `@${currentUserData.username}`;
+      loadAllUsers(); // Automatically load all registered users
     }
   </script>
 </body>
