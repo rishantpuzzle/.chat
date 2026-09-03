@@ -220,6 +220,7 @@
 
   <div class="container">
     
+    <!-- 1. AUTHENTICATION SCREEN -->
     <div id="auth-screen" class="center-box">
       <img src="logo.png" alt="RishantChat Logo" class="auth-logo-large" onerror="this.style.display='none'" />
       <h1 style="color:#f8fafc; font-size:22px; font-weight:700;">RishantChat</h1>
@@ -236,6 +237,7 @@
       <button class="btn-action btn-google" id="btn-google-login">Continue with Google</button>
     </div>
 
+    <!-- 2. USERNAME SETUP -->
     <div id="username-screen" class="center-box hidden">
       <img src="logo.png" alt="Logo" style="width:55px; height:55px; border-radius:12px; margin-bottom:10px;" />
       <h2>Setup Profile</h2>
@@ -244,6 +246,7 @@
       <button class="btn-action" id="btn-save-username">Save & Continue</button>
     </div>
 
+    <!-- 3. EDIT PROFILE SCREEN -->
     <div id="edit-profile-screen" class="center-box hidden">
       <h2>Edit Profile</h2>
       <p style="color:#94a3b8; font-size:12px; margin:4px 0 14px 0;">Update display name & username</p>
@@ -253,6 +256,7 @@
       <button class="btn-action btn-secondary" id="btn-cancel-edit-profile">Cancel</button>
     </div>
 
+    <!-- 4. MAIN CHAT DASHBOARD -->
     <div id="main-screen" class="hidden" style="display:flex; flex-direction:column; height:100%;">
       
       <div class="header">
@@ -277,6 +281,7 @@
 
       <div id="users-list" class="users-list-container"></div>
 
+      <!-- ACTIVE CHAT WINDOW -->
       <div id="chat-window" class="chat-area hidden">
         <div class="header">
           <div class="header-brand">
@@ -307,6 +312,7 @@
       </div>
     </div>
 
+    <!-- 5. AUDIO / VIDEO CALL OVERLAY MODAL -->
     <div id="call-modal" class="call-overlay hidden">
       <div style="text-align:center;">
         <h3 id="call-user-title" style="color:#f8fafc; font-size:18px;">@user</h3>
@@ -326,6 +332,7 @@
 
   </div>
 
+  <!-- Firebase & WebRTC Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { 
@@ -368,19 +375,27 @@
     let remoteStream = null;
     let currentCallDocRef = null;
 
-    // --- NOTIFICATIONS ---
+    // --- NOTIFICATIONS (SAFE MOBILE WRAPPER) ---
     function requestNotificationPermission() {
-      if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-        Notification.requestPermission();
+      try {
+        if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+          Notification.requestPermission();
+        }
+      } catch (err) {
+        console.log("Notification request skipped:", err);
       }
     }
 
     function triggerNotification(senderName, text) {
-      if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(`RishantChat: @${senderName}`, {
-          body: text || "Sent a media file",
-          icon: "logo.png"
-        });
+      try {
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(`RishantChat: @${senderName}`, {
+            body: text || "Sent a media file",
+            icon: "logo.png"
+          });
+        }
+      } catch (err) {
+        console.log("Notification error caught:", err);
       }
     }
 
@@ -543,7 +558,7 @@
       if (unsubscribeMessages) unsubscribeMessages();
     });
 
-    // Realtime Chat Listener
+    // REALTIME CHAT LISTENER (FIXED REALTIME UPDATE BUG)
     function loadMessages() {
       const chatId = getChatId(currentUser.uid, activeChatUser.uid);
       const messagesContainer = document.getElementById('messages-container');
@@ -554,17 +569,7 @@
       let isInitialLoad = true;
 
       unsubscribeMessages = onSnapshot(q, (snapshot) => {
-        if (!isInitialLoad) {
-          snapshot.docChanges().forEach((change) => {
-            if (change.type === "added") {
-              const newMsg = change.data();
-              if (newMsg.senderId !== currentUser.uid) {
-                triggerNotification(activeChatUser.username, newMsg.text);
-              }
-            }
-          });
-        }
-
+        // ALWAYS RENDER MESSAGES FIRST (Guarantees Realtime Message Appearance)
         messagesContainer.innerHTML = '';
         snapshot.forEach((docSnap) => {
           const msg = docSnap.data();
@@ -594,7 +599,22 @@
         });
 
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // SAFE NOTIFICATIONS (Will never freeze/stop UI rendering)
+        if (!isInitialLoad) {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              const newMsg = change.data();
+              if (newMsg.senderId !== currentUser.uid) {
+                triggerNotification(activeChatUser.username, newMsg.text);
+              }
+            }
+          });
+        }
+
         isInitialLoad = false;
+      }, (err) => {
+        console.error("Messages Error:", err);
       });
     }
 
@@ -712,7 +732,6 @@
       });
     }
 
-    // FIXED: Incoming call listener for added & modified status
     function listenForIncomingCalls() {
       const q = query(
         collection(db, 'calls'), 
