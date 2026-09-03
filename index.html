@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,25 +9,28 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
     body { background-color: #0c1317; color: #e9edef; display: flex; justify-content: center; align-items: center; height: 100vh; }
     
-    .container { width: 100%; max-width: 450px; height: 100vh; background: #111b21; display: flex; flex-direction: column; border: 1px solid #222d34; }
+    .container { width: 100%; max-width: 450px; height: 100vh; background: #111b21; display: flex; flex-direction: column; border: 1px solid #222d34; position: relative; }
     .hidden { display: none !important; }
 
     /* Header */
-    .header { background: #202c33; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222d34; }
+    .header { background: #202c33; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222d34; }
     .header h2 { color: #00a884; font-size: 20px; }
-    .btn-danger { background: #e53935; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    .header-actions { display: flex; gap: 8px; }
+    .btn-small { background: #2a3942; color: #e9edef; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-danger { background: #e53935; color: white; }
 
-    /* Auth Boxes */
-    .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; text-align: center; }
+    /* Auth & Profile Forms */
+    .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 25px; text-align: center; }
     .btn-action { background: #00a884; color: white; border: none; padding: 12px; font-size: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
     .btn-google { background: #4285f4; }
+    .btn-secondary { background: #3b4a54; margin-top: 5px; }
     
     input[type="text"], input[type="email"], input[type="password"] { 
-      width: 100%; padding: 12px; background: #2a3942; border: 1px solid #3b4a54; color: white; border-radius: 8px; margin: 6px 0; outline: none; 
+      width: 100%; padding: 12px; background: #2a3942; border: 1px solid #3b4a54; color: white; border-radius: 8px; margin: 6px 0; outline: none; font-size: 14px;
     }
 
     .divider { margin: 15px 0; color: #8696a0; font-size: 13px; }
-    .toggle-link { color: #00a884; cursor: pointer; margin-top: 10px; font-size: 14px; text-decoration: underline; }
+    .toggle-link { color: #00a884; cursor: pointer; margin-top: 12px; font-size: 14px; text-decoration: underline; }
 
     /* Search & Users */
     .search-box { padding: 10px; background: #111b21; }
@@ -36,52 +39,70 @@
     /* Chat Area */
     .chat-area { flex: 1; display: flex; flex-direction: column; background: #0b141a; }
     .messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-    .msg { max-width: 70%; padding: 8px 12px; border-radius: 8px; font-size: 14px; word-break: break-word; }
+    .msg { max-width: 75%; padding: 8px 12px; border-radius: 8px; font-size: 14px; word-break: break-word; }
     .msg.sent { background: #005c4b; align-self: flex-end; color: #e9edef; }
     .msg.received { background: #202c33; align-self: flex-start; color: #e9edef; }
 
     .input-area { padding: 10px; background: #202c33; display: flex; gap: 10px; }
     .input-area input { margin: 0; flex: 1; }
-    .btn-send { background: #00a884; border: none; color: white; padding: 0 18px; border-radius: 8px; cursor: pointer; }
+    .btn-send { background: #00a884; border: none; color: white; padding: 0 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
   </style>
 </head>
 <body>
 
   <div class="container">
     
-    <!-- 1. AUTH SCREEN (LOGIN & REGISTER) -->
+    <!-- 1. AUTHENTICATION SCREEN -->
     <div id="auth-screen" class="center-box">
       <h1 style="color:#00a884; margin-bottom: 5px;">Rishant Chat</h1>
-      <p style="color:#8696a0; font-size: 13px; margin-bottom: 15px;">Email Password ya Google se Sign In karein</p>
+      <p style="color:#8696a0; font-size: 13px; margin-bottom: 15px;">Sign in with Email or Google</p>
 
-      <input type="email" id="auth-email" placeholder="Gmail / Email Address" />
+      <input type="email" id="auth-email" placeholder="Email Address" />
       <input type="password" id="auth-password" placeholder="Password" />
 
       <button class="btn-action" id="btn-email-action">Login</button>
       
-      <p class="toggle-link" id="toggle-auth-mode">Account nahi hai? Naya Account Banayein</p>
+      <p class="toggle-link" id="toggle-auth-mode">Don't have an account? Sign Up</p>
 
-      <div class="divider">--- YA ---</div>
+      <div class="divider">--- OR ---</div>
 
-      <button class="btn-action btn-google" id="btn-google-login">Google ke sath Login karein</button>
+      <button class="btn-action btn-google" id="btn-google-login">Sign in with Google</button>
     </div>
 
-    <!-- 2. SET USERNAME SCREEN -->
+    <!-- 2. INITIAL USERNAME SETUP SCREEN -->
     <div id="username-screen" class="center-box hidden">
-      <h2>Username Banayein</h2>
-      <p style="color:#8696a0; font-size:13px; margin:5px 0 15px 0;">Aapka Email kisi dusre user ko nahi dikhega.</p>
+      <h2>Create Username</h2>
+      <p style="color:#8696a0; font-size:13px; margin:5px 0 15px 0;">Your email address will remain hidden from other users.</p>
       <input type="text" id="username-input" placeholder="e.g. rishant_king" />
-      <button class="btn-action" id="btn-save-username">Continue</button>
+      <button class="btn-action" id="btn-save-username">Save & Continue</button>
     </div>
 
-    <!-- 3. MAIN CHAT DASHBOARD -->
+    <!-- 3. EDIT PROFILE SCREEN -->
+    <div id="edit-profile-screen" class="center-box hidden">
+      <h2>Edit Profile</h2>
+      <p style="color:#8696a0; font-size:13px; margin:5px 0 15px 0;">Update your account information</p>
+      
+      <label style="align-self: flex-start; font-size:12px; color:#8696a0; margin-top:5px;">Display Name</label>
+      <input type="text" id="edit-display-name" placeholder="Display Name" />
+      
+      <label style="align-self: flex-start; font-size:12px; color:#8696a0; margin-top:5px;">Username</label>
+      <input type="text" id="edit-username" placeholder="Username" />
+      
+      <button class="btn-action" id="btn-save-edit-profile">Save Changes</button>
+      <button class="btn-action btn-secondary" id="btn-cancel-edit-profile">Cancel</button>
+    </div>
+
+    <!-- 4. MAIN CHAT DASHBOARD -->
     <div id="main-screen" class="hidden" style="display:flex; flex-direction:column; height:100%;">
       <div class="header">
         <div>
           <h2>Rishant Chat</h2>
           <small id="my-username-display" style="color:#8696a0;"></small>
         </div>
-        <button class="btn-danger" id="btn-logout">Logout</button>
+        <div class="header-actions">
+          <button class="btn-small" id="btn-open-edit-profile">Edit Profile</button>
+          <button class="btn-small btn-danger" id="btn-logout">Logout</button>
+        </div>
       </div>
 
       <div class="search-box">
@@ -90,7 +111,7 @@
 
       <div id="search-results"></div>
 
-      <!-- Chat Window -->
+      <!-- Active Chat Window -->
       <div id="chat-window" class="chat-area hidden">
         <div class="header" style="background:#111b21;">
           <span id="chat-with-user" style="font-weight:bold;"></span>
@@ -125,6 +146,7 @@
       doc, 
       getDoc, 
       setDoc, 
+      updateDoc,
       collection, 
       query, 
       where, 
@@ -155,17 +177,17 @@
     let unsubscribeMessages = null;
     let isSignUpMode = false;
 
-    // Toggle Login/Register Mode
+    // Toggle Sign In / Sign Up Mode
     document.getElementById('toggle-auth-mode').addEventListener('click', () => {
       isSignUpMode = !isSignUpMode;
       const btn = document.getElementById('btn-email-action');
       const toggle = document.getElementById('toggle-auth-mode');
       if (isSignUpMode) {
-        btn.innerText = "Register";
-        toggle.innerText = "Pehle se account hai? Login karein";
+        btn.innerText = "Sign Up";
+        toggle.innerText = "Already have an account? Log In";
       } else {
         btn.innerText = "Login";
-        toggle.innerText = "Account nahi hai? Naya Account Banayein";
+        toggle.innerText = "Don't have an account? Sign Up";
       }
     });
 
@@ -173,13 +195,19 @@
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
-        const userDocRef = doc(db, 'users', user.uid);
-        const userSnap = await getDoc(userDocRef);
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userDocRef);
 
-        if (userSnap.exists() && userSnap.data().username) {
-          currentUserData = userSnap.data();
-          showMainScreen();
-        } else {
+          if (userSnap.exists() && userSnap.data().username) {
+            currentUserData = userSnap.data();
+            showMainScreen();
+          } else {
+            showUsernameScreen();
+          }
+        } catch (err) {
+          console.error("Firestore Error:", err);
+          alert("Database Error: " + err.message + "\nPlease make sure Firestore rules allow read/write!");
           showUsernameScreen();
         }
       } else {
@@ -192,7 +220,7 @@
       const email = document.getElementById('auth-email').value.trim();
       const password = document.getElementById('auth-password').value.trim();
 
-      if (!email || !password) return alert("Email aur Password dono bharein!");
+      if (!email || !password) return alert("Please enter both email and password!");
 
       try {
         if (isSignUpMode) {
@@ -201,7 +229,7 @@
           await signInWithEmailAndPassword(auth, email, password);
         }
       } catch (err) {
-        alert("Error: " + err.message);
+        alert("Authentication Error: " + err.message);
       }
     });
 
@@ -218,27 +246,66 @@
     // Logout
     document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
 
-    // Save Username
+    // Save Initial Username
     document.getElementById('btn-save-username').addEventListener('click', async () => {
       const username = document.getElementById('username-input').value.trim().toLowerCase();
-      if (!username) return alert('Username enter karein!');
+      if (!username) return alert('Please enter a username!');
 
-      const q = query(collection(db, 'users'), where('username', '==', username));
-      const snapshot = await getDocs(q);
+      try {
+        const q = query(collection(db, 'users'), where('username', '==', username));
+        const snapshot = await getDocs(q);
 
-      if (!snapshot.empty) {
-        return alert('Ye username pehle se exist karta hai! Koyi dusra chuney.');
+        if (!snapshot.empty) {
+          return alert('This username is already taken! Please choose another one.');
+        }
+
+        const userData = {
+          uid: currentUser.uid,
+          username: username,
+          displayName: currentUser.displayName || username
+        };
+
+        await setDoc(doc(db, 'users', currentUser.uid), userData);
+        currentUserData = userData;
+        showMainScreen();
+      } catch (err) {
+        alert("Error saving username: " + err.message);
       }
+    });
 
-      const userData = {
-        uid: currentUser.uid,
-        username: username,
-        displayName: currentUser.displayName || username
-      };
+    // Open & Cancel Edit Profile
+    document.getElementById('btn-open-edit-profile').addEventListener('click', () => showEditProfileScreen());
+    document.getElementById('btn-cancel-edit-profile').addEventListener('click', () => showMainScreen());
 
-      await setDoc(doc(db, 'users', currentUser.uid), userData);
-      currentUserData = userData;
-      showMainScreen();
+    // Save Profile Updates
+    document.getElementById('btn-save-edit-profile').addEventListener('click', async () => {
+      const newDisplayName = document.getElementById('edit-display-name').value.trim();
+      const newUsername = document.getElementById('edit-username').value.trim().toLowerCase();
+
+      if (!newUsername) return alert("Username cannot be empty!");
+
+      try {
+        if (newUsername !== currentUserData.username) {
+          const q = query(collection(db, 'users'), where('username', '==', newUsername));
+          const snapshot = await getDocs(q);
+          if (!snapshot.empty) {
+            return alert('Username is already taken! Please select a different one.');
+          }
+        }
+
+        const updatedData = {
+          uid: currentUser.uid,
+          displayName: newDisplayName || newUsername,
+          username: newUsername
+        };
+
+        await setDoc(doc(db, 'users', currentUser.uid), updatedData, { merge: true });
+        currentUserData = updatedData;
+        alert("Profile updated successfully!");
+        showMainScreen();
+      } catch (err) {
+        alert("Error updating profile: " + err.message);
+      }
     });
 
     // Search Users
@@ -249,29 +316,33 @@
 
       if (!queryText) return;
 
-      const q = query(
-        collection(db, 'users'), 
-        where('username', '>=', queryText),
-        where('username', '<=', queryText + '\uf8ff')
-      );
+      try {
+        const q = query(
+          collection(db, 'users'), 
+          where('username', '>=', queryText),
+          where('username', '<=', queryText + '\uf8ff')
+        );
 
-      const snapshot = await getDocs(q);
-      snapshot.forEach((docSnap) => {
-        const user = docSnap.data();
-        if (user.uid !== currentUser.uid) {
-          const card = document.createElement('div');
-          card.className = 'user-card';
-          card.innerHTML = `
-            <div>
-              <strong>@${user.username}</strong>
-              <div style="font-size:12px; color:#8696a0;">${user.displayName}</div>
-            </div>
-            <button class="btn-send" style="padding:6px 12px;">Chat</button>
-          `;
-          card.querySelector('button').addEventListener('click', () => openChat(user.uid, user.username));
-          resultsContainer.appendChild(card);
-        }
-      });
+        const snapshot = await getDocs(q);
+        snapshot.forEach((docSnap) => {
+          const user = docSnap.data();
+          if (user.uid !== currentUser.uid) {
+            const card = document.createElement('div');
+            card.className = 'user-card';
+            card.innerHTML = `
+              <div>
+                <strong>@${user.username}</strong>
+                <div style="font-size:12px; color:#8696a0;">${user.displayName}</div>
+              </div>
+              <button class="btn-send" style="padding:6px 12px;">Chat</button>
+            `;
+            card.querySelector('button').addEventListener('click', () => openChat(user.uid, user.username));
+            resultsContainer.appendChild(card);
+          }
+        });
+      } catch (err) {
+        console.error("Search Error:", err);
+      }
     });
 
     // Chat Window Helpers
@@ -324,32 +395,46 @@
 
       const chatId = getChatId(currentUser.uid, activeChatUser.uid);
 
-      await addDoc(collection(db, 'chats', chatId, 'messages'), {
-        senderId: currentUser.uid,
-        receiverId: activeChatUser.uid,
-        text: text,
-        timestamp: serverTimestamp()
-      });
-
-      input.value = '';
+      try {
+        await addDoc(collection(db, 'chats', chatId, 'messages'), {
+          senderId: currentUser.uid,
+          receiverId: activeChatUser.uid,
+          text: text,
+          timestamp: serverTimestamp()
+        });
+        input.value = '';
+      } catch (err) {
+        alert("Failed to send message: " + err.message);
+      }
     });
 
-    // Screen Management
-    function showAuthScreen() {
-      document.getElementById('auth-screen').classList.remove('hidden');
+    // Screen Navigation Functions
+    function hideAllScreens() {
+      document.getElementById('auth-screen').classList.add('hidden');
       document.getElementById('username-screen').classList.add('hidden');
+      document.getElementById('edit-profile-screen').classList.add('hidden');
       document.getElementById('main-screen').classList.add('hidden');
+    }
+
+    function showAuthScreen() {
+      hideAllScreens();
+      document.getElementById('auth-screen').classList.remove('hidden');
     }
 
     function showUsernameScreen() {
-      document.getElementById('auth-screen').classList.add('hidden');
+      hideAllScreens();
       document.getElementById('username-screen').classList.remove('hidden');
-      document.getElementById('main-screen').classList.add('hidden');
+    }
+
+    function showEditProfileScreen() {
+      hideAllScreens();
+      document.getElementById('edit-profile-screen').classList.remove('hidden');
+      document.getElementById('edit-display-name').value = currentUserData?.displayName || '';
+      document.getElementById('edit-username').value = currentUserData?.username || '';
     }
 
     function showMainScreen() {
-      document.getElementById('auth-screen').classList.add('hidden');
-      document.getElementById('username-screen').classList.add('hidden');
+      hideAllScreens();
       document.getElementById('main-screen').classList.remove('hidden');
       document.getElementById('my-username-display').innerText = `@${currentUserData.username}`;
     }
