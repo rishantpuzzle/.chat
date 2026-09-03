@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rishant Chat</title>
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background-color: #0c1317; color: #e9edef; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    
+    .container { width: 100%; max-width: 450px; height: 100vh; background: #111b21; display: flex; flex-direction: column; border: 1px solid #222d34; }
+    .hidden { display: none !important; }
+
+    /* Header */
+    .header { background: #202c33; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222d34; }
+    .header h2 { color: #00a884; font-size: 20px; }
+    .btn-danger { background: #e53935; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+
+    /* Auth Boxes */
+    .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; text-align: center; }
+    .btn-action { background: #00a884; color: white; border: none; padding: 12px; font-size: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+    .btn-google { background: #4285f4; }
+    
+    input[type="text"], input[type="email"], input[type="password"] { 
+      width: 100%; padding: 12px; background: #2a3942; border: 1px solid #3b4a54; color: white; border-radius: 8px; margin: 6px 0; outline: none; 
+    }
+
+    .divider { margin: 15px 0; color: #8696a0; font-size: 13px; }
+    .toggle-link { color: #00a884; cursor: pointer; margin-top: 10px; font-size: 14px; text-decoration: underline; }
+
+    /* Search & Users */
+    .search-box { padding: 10px; background: #111b21; }
+    .user-card { background: #202c33; padding: 12px; margin: 5px 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+
+    /* Chat Area */
+    .chat-area { flex: 1; display: flex; flex-direction: column; background: #0b141a; }
+    .messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    .msg { max-width: 70%; padding: 8px 12px; border-radius: 8px; font-size: 14px; word-break: break-word; }
+    .msg.sent { background: #005c4b; align-self: flex-end; color: #e9edef; }
+    .msg.received { background: #202c33; align-self: flex-start; color: #e9edef; }
+
+    .input-area { padding: 10px; background: #202c33; display: flex; gap: 10px; }
+    .input-area input { margin: 0; flex: 1; }
+    .btn-send { background: #00a884; border: none; color: white; padding: 0 18px; border-radius: 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- 1. AUTH SCREEN (LOGIN & REGISTER) -->
+    <div id="auth-screen" class="center-box">
+      <h1 style="color:#00a884; margin-bottom: 5px;">Rishant Chat</h1>
+      <p style="color:#8696a0; font-size: 13px; margin-bottom: 15px;">Email Password ya Google se Sign In karein</p>
+
+      <input type="email" id="auth-email" placeholder="Gmail / Email Address" />
+      <input type="password" id="auth-password" placeholder="Password" />
+
+      <button class="btn-action" id="btn-email-action">Login</button>
+      
+      <p class="toggle-link" id="toggle-auth-mode">Account nahi hai? Naya Account Banayein</p>
+
+      <div class="divider">--- YA ---</div>
+
+      <button class="btn-action btn-google" id="btn-google-login">Google ke sath Login karein</button>
+    </div>
+
+    <!-- 2. SET USERNAME SCREEN -->
+    <div id="username-screen" class="center-box hidden">
+      <h2>Username Banayein</h2>
+      <p style="color:#8696a0; font-size:13px; margin:5px 0 15px 0;">Aapka Email kisi dusre user ko nahi dikhega.</p>
+      <input type="text" id="username-input" placeholder="e.g. rishant_king" />
+      <button class="btn-action" id="btn-save-username">Continue</button>
+    </div>
+
+    <!-- 3. MAIN CHAT DASHBOARD -->
+    <div id="main-screen" class="hidden" style="display:flex; flex-direction:column; height:100%;">
+      <div class="header">
+        <div>
+          <h2>Rishant Chat</h2>
+          <small id="my-username-display" style="color:#8696a0;"></small>
+        </div>
+        <button class="btn-danger" id="btn-logout">Logout</button>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Search user by username..." />
+      </div>
+
+      <div id="search-results"></div>
+
+      <!-- Chat Window -->
+      <div id="chat-window" class="chat-area hidden">
+        <div class="header" style="background:#111b21;">
+          <span id="chat-with-user" style="font-weight:bold;"></span>
+          <button style="background:none; border:none; color:#8696a0; cursor:pointer;" id="btn-close-chat">✖</button>
+        </div>
+        
+        <div class="messages" id="messages-container"></div>
+
+        <div class="input-area">
+          <input type="text" id="message-input" placeholder="Type a message..." />
+          <button class="btn-send" id="btn-send-msg">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Firebase Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithPopup, 
+      GoogleAuthProvider, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      onAuthStateChanged, 
+      signOut 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      getDoc, 
+      setDoc, 
+      collection, 
+      query, 
+      where, 
+      getDocs, 
+      addDoc, 
+      orderBy, 
+      onSnapshot, 
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC29TMMQHfUG-UDiXgM14B8K6NVeldft6s",
+      authDomain: "rishantchat.firebaseapp.com",
+      databaseURL: "https://rishantchat-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "rishantchat",
+      storageBucket: "rishantchat.firebasestorage.app",
+      messagingSenderId: "1064059813928",
+      appId: "1:1064059813928:web:9dbe1561d811501edc351d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+    let currentUserData = null;
+    let activeChatUser = null;
+    let unsubscribeMessages = null;
+    let isSignUpMode = false;
+
+    // Toggle Login/Register Mode
+    document.getElementById('toggle-auth-mode').addEventListener('click', () => {
+      isSignUpMode = !isSignUpMode;
+      const btn = document.getElementById('btn-email-action');
+      const toggle = document.getElementById('toggle-auth-mode');
+      if (isSignUpMode) {
+        btn.innerText = "Register";
+        toggle.innerText = "Pehle se account hai? Login karein";
+      } else {
+        btn.innerText = "Login";
+        toggle.innerText = "Account nahi hai? Naya Account Banayein";
+      }
+    });
+
+    // Auth State Observer
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        const userDocRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userDocRef);
+
+        if (userSnap.exists() && userSnap.data().username) {
+          currentUserData = userSnap.data();
+          showMainScreen();
+        } else {
+          showUsernameScreen();
+        }
+      } else {
+        showAuthScreen();
+      }
+    });
+
+    // Email/Password Authentication
+    document.getElementById('btn-email-action').addEventListener('click', async () => {
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value.trim();
+
+      if (!email || !password) return alert("Email aur Password dono bharein!");
+
+      try {
+        if (isSignUpMode) {
+          await createUserWithEmailAndPassword(auth, email, password);
+        } else {
+          await signInWithEmailAndPassword(auth, email, password);
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    });
+
+    // Google Login
+    document.getElementById('btn-google-login').addEventListener('click', async () => {
+      const provider = new GoogleAuthProvider();
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        alert("Google Login Error: " + err.message);
+      }
+    });
+
+    // Logout
+    document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
+    // Save Username
+    document.getElementById('btn-save-username').addEventListener('click', async () => {
+      const username = document.getElementById('username-input').value.trim().toLowerCase();
+      if (!username) return alert('Username enter karein!');
+
+      const q = query(collection(db, 'users'), where('username', '==', username));
+      const snapshot = await getDocs(q);
+
+      if (!snapshot.empty) {
+        return alert('Ye username pehle se exist karta hai! Koyi dusra chuney.');
+      }
+
+      const userData = {
+        uid: currentUser.uid,
+        username: username,
+        displayName: currentUser.displayName || username
+      };
+
+      await setDoc(doc(db, 'users', currentUser.uid), userData);
+      currentUserData = userData;
+      showMainScreen();
+    });
+
+    // Search Users
+    document.getElementById('search-input').addEventListener('input', async (e) => {
+      const queryText = e.target.value.trim().toLowerCase();
+      const resultsContainer = document.getElementById('search-results');
+      resultsContainer.innerHTML = '';
+
+      if (!queryText) return;
+
+      const q = query(
+        collection(db, 'users'), 
+        where('username', '>=', queryText),
+        where('username', '<=', queryText + '\uf8ff')
+      );
+
+      const snapshot = await getDocs(q);
+      snapshot.forEach((docSnap) => {
+        const user = docSnap.data();
+        if (user.uid !== currentUser.uid) {
+          const card = document.createElement('div');
+          card.className = 'user-card';
+          card.innerHTML = `
+            <div>
+              <strong>@${user.username}</strong>
+              <div style="font-size:12px; color:#8696a0;">${user.displayName}</div>
+            </div>
+            <button class="btn-send" style="padding:6px 12px;">Chat</button>
+          `;
+          card.querySelector('button').addEventListener('click', () => openChat(user.uid, user.username));
+          resultsContainer.appendChild(card);
+        }
+      });
+    });
+
+    // Chat Window Helpers
+    function getChatId(uid1, uid2) {
+      return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+    }
+
+    function openChat(targetUid, targetUsername) {
+      activeChatUser = { uid: targetUid, username: targetUsername };
+      document.getElementById('chat-with-user').innerText = `@${targetUsername}`;
+      document.getElementById('chat-window').classList.remove('hidden');
+      loadMessages();
+    }
+
+    document.getElementById('btn-close-chat').addEventListener('click', () => {
+      document.getElementById('chat-window').classList.add('hidden');
+      if (unsubscribeMessages) unsubscribeMessages();
+    });
+
+    // Load Realtime Messages
+    function loadMessages() {
+      const chatId = getChatId(currentUser.uid, activeChatUser.uid);
+      const messagesContainer = document.getElementById('messages-container');
+
+      if (unsubscribeMessages) unsubscribeMessages();
+
+      const q = query(
+        collection(db, 'chats', chatId, 'messages'),
+        orderBy('timestamp', 'asc')
+      );
+
+      unsubscribeMessages = onSnapshot(q, (snapshot) => {
+        messagesContainer.innerHTML = '';
+        snapshot.forEach((docSnap) => {
+          const msg = docSnap.data();
+          const msgDiv = document.createElement('div');
+          msgDiv.className = `msg ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
+          msgDiv.innerText = msg.text;
+          messagesContainer.appendChild(msgDiv);
+        });
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      });
+    }
+
+    // Send Message
+    document.getElementById('btn-send-msg').addEventListener('click', async () => {
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+      if (!text || !activeChatUser) return;
+
+      const chatId = getChatId(currentUser.uid, activeChatUser.uid);
+
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
+        senderId: currentUser.uid,
+        receiverId: activeChatUser.uid,
+        text: text,
+        timestamp: serverTimestamp()
+      });
+
+      input.value = '';
+    });
+
+    // Screen Management
+    function showAuthScreen() {
+      document.getElementById('auth-screen').classList.remove('hidden');
+      document.getElementById('username-screen').classList.add('hidden');
+      document.getElementById('main-screen').classList.add('hidden');
+    }
+
+    function showUsernameScreen() {
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('username-screen').classList.remove('hidden');
+      document.getElementById('main-screen').classList.add('hidden');
+    }
+
+    function showMainScreen() {
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('username-screen').classList.add('hidden');
+      document.getElementById('main-screen').classList.remove('hidden');
+      document.getElementById('my-username-display').innerText = `@${currentUserData.username}`;
+    }
+  </script>
+</body>
+</html>
