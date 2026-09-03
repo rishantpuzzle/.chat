@@ -712,21 +712,30 @@
       });
     }
 
+    // FIXED: Incoming call listener for added & modified status
     function listenForIncomingCalls() {
-      const q = query(collection(db, 'calls'), where('receiverId', '==', currentUser.uid), where('status', '==', 'ringing'));
+      const q = query(
+        collection(db, 'calls'), 
+        where('receiverId', '==', currentUser.uid)
+      );
       
       onSnapshot(q, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
+          if (change.type === 'added' || change.type === 'modified') {
             const callData = change.data();
-            currentCallDocRef = change.doc.ref;
 
-            document.getElementById('call-modal').classList.remove('hidden');
-            document.getElementById('call-user-title').innerText = `Incoming Call`;
-            document.getElementById('call-status').innerText = `${callData.isVideo ? 'Video' : 'Voice'} Call Ringing...`;
-            document.getElementById('btn-accept-call').classList.remove('hidden');
+            if (callData.status === 'ringing') {
+              currentCallDocRef = change.doc.ref;
 
-            document.getElementById('btn-accept-call').onclick = () => answerCall(callData);
+              document.getElementById('call-modal').classList.remove('hidden');
+              document.getElementById('call-user-title').innerText = `Incoming Call`;
+              document.getElementById('call-status').innerText = `${callData.isVideo ? 'Video' : 'Voice'} Call Ringing...`;
+              
+              const acceptBtn = document.getElementById('btn-accept-call');
+              acceptBtn.classList.remove('hidden');
+
+              acceptBtn.onclick = () => answerCall(callData);
+            }
           }
         });
       });
