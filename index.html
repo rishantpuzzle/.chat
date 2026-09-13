@@ -37,6 +37,30 @@
       box-shadow: 0 0 40px rgba(0,0,0,0.8);
     }
 
+    /* Intro Video */
+    #intro-screen {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #intro-screen video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+
+    #intro-screen.intro-hidden {
+      display: none !important;
+    }
+
     .hidden { display: none !important; }
 
     /* Custom Mobile Scrollbars */
@@ -218,6 +242,13 @@
 </head>
 <body>
 
+  <!-- INTRO VIDEO -->
+  <div id="intro-screen">
+    <video id="intro-video" autoplay muted playsinline preload="auto">
+      <source src="intro.mp4" type="video/mp4">
+    </video>
+  </div>
+
   <div class="container">
     
     <!-- 1. AUTHENTICATION SCREEN -->
@@ -334,6 +365,32 @@
 
   <!-- Firebase & WebRTC Script -->
   <script type="module">
+    // Play intro.mp4 before opening RishantChat
+    const introScreen = document.getElementById('intro-screen');
+    const introVideo = document.getElementById('intro-video');
+
+    function closeIntro() {
+      introScreen.classList.add('intro-hidden');
+      introVideo.pause();
+    }
+
+    introVideo.addEventListener('ended', closeIntro);
+    introVideo.addEventListener('error', closeIntro);
+
+    // Ensure autoplay starts when the page loads.
+    introVideo.play().catch(() => {
+      // If autoplay is blocked, start on the first user interaction.
+      const startIntro = () => {
+        introVideo.play().catch(() => {});
+        document.removeEventListener('click', startIntro);
+        document.removeEventListener('touchstart', startIntro);
+        document.removeEventListener('keydown', startIntro);
+      };
+      document.addEventListener('click', startIntro, { once: true });
+      document.addEventListener('touchstart', startIntro, { once: true });
+      document.addEventListener('keydown', startIntro, { once: true });
+    });
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { 
       getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, 
